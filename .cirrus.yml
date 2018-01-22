@@ -1,0 +1,27 @@
+container:
+  image: cirrusci/android-sdk:26
+  cpu: 6
+  memory: 18G
+
+environment:
+  SKIP_OKBUCK: true
+  EXTRA_OKBUCK_ARGS: "--quite --stacktrace"
+
+test_task:
+  create_device_script:
+    - sdkmanager "extras;android;m2repository"
+    - sdkmanager "system-images;android-18;default;armeabi-v7a"
+    - echo no | avdmanager create avd -f -n test -k "system-images;android-18;default;armeabi-v7a"
+  start_emulator_background_script:
+    - cd $ANDROID_HOME/tools
+    - emulator -avd test -no-audio -no-window
+  install_packages_script:
+    - sudo apt-get update
+    - sudo apt-get -y install ant zip unzip
+  build_script: ./.ci/build.sh
+  test_lint_script: ./.ci/test_lint.sh
+  test_unit_script: ./buckw test --include unit
+  wait_for_emulator_script:
+    - adb wait-for-device
+    - adb shell input keyevent 82
+  test_instrumentation_script: ./buckw test //app:instrumentation_demoDebug_test
